@@ -1,0 +1,6 @@
+{
+  "name": "MindVault AI",
+  "description": "Secure, private, AI-powered personal knowledge and reflection platform with multi-turn Gemini conversations, Firestore document storage, and AI weekly reflections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

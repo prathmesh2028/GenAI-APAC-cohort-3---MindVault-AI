@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 200 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "User saved chat conversation with Gemini",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "summary": { "type": "string", "maxLength": 3000 },
+        "messages": { "type": "array" },
+        "topics": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "summary", "messages", "createdAt", "updatedAt"]
+    },
+    "Reflection": {
+      "title": "Reflection",
+      "description": "AI-generated weekly reflection synthesized from user conversations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "weekStartDate": { "type": "string", "maxLength": 64 },
+        "topics": { "type": "array" },
+        "learned": { "type": "string", "maxLength": 4000 },
+        "patterns": { "type": "string", "maxLength": 4000 },
+        "nextSteps": { "type": "array" },
+        "motivationalInsight": { "type": "string", "maxLength": 2000 },
+        "conversationCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "topics", "learned", "patterns", "nextSteps", "motivationalInsight", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user profile and preferences"
+    },
+    "/users/{userId}/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Isolated private conversations owned solely by the authenticated user"
+    },
+    "/users/{userId}/reflections/{reflectionId}": {
+      "schema": "Reflection",
+      "description": "Isolated private weekly reflections owned solely by the authenticated user"
+    }
+  }
+}
