@@ -135,23 +135,41 @@ npm run start
 
 ---
 
-## ☁️ Google Cloud Run Deployment
+## Google Cloud Run Deployment
 
-MindVault AI is pre-configured for single-container Cloud Run deployment:
+MindVault AI is configured for automated, zero-CLI deployment directly from GitHub using **Google Cloud Buildpacks** and **Cloud Run Continuous Deployment**:
 
-1. Build the production bundle:
-   ```bash
-   npm run build
-   ```
-2. Deploy directly via Cloud SDK:
-   ```bash
-   gcloud run deploy mindvault-ai \
-     --source . \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars="GEMINI_API_KEY=projects/PROJECT_ID/secrets/GEMINI_API_KEY:latest"
-   ```
+### UI-Based Continuous Deployment Setup
+
+1. Open Google Cloud Console.
+2. Open Cloud Run.
+3. Create a new service.
+4. Select "Continuously deploy new revisions from a source repository".
+5. Connect GitHub.
+6. Select:
+   `GenAI-APAC-cohort-3---MindVault-AI`
+7. Select branch:
+   `main`
+8. Select Google Cloud Buildpacks / Node.js.
+9. Use repository root as the build context.
+10. Leave Entrypoint blank if the package configuration provides the correct start command. (Cloud Run will automatically use `npm start` from `package.json`).
+11. Configure required environment variables/secrets:
+    - `GEMINI_API_KEY`: Your Gemini API Key (or reference it directly from Google Cloud Secret Manager).
+    - `NODE_ENV`: `production`
+    - (Optional) `GCP_PROJECT_ID`: `onyx-philosophy-505508-d3`
+    - (Optional) `USE_SECRET_MANAGER`: `false` (or `true` if reading from Secret Manager)
+12. Allow unauthenticated invocation for the public web application.
+13. Deploy.
+
+### Automated CI/CD Pipeline
+Once connected, future pushes to the `main` branch will automatically trigger Google Cloud Build with Node.js Buildpacks, compile the application, and deploy a new revision to your live Cloud Run URL with zero downtime.
+
+---
+
+### Health Check Endpoint
+- **URL**: `GET /health`
+- **Response**: `{"status": "ok"}`
+- Used by Cloud Run readiness and liveness probes to verify container health.
 
 ---
 

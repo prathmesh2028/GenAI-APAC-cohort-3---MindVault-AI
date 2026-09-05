@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -11,7 +12,8 @@ import { getGeminiApiKey } from './server/secrets.js';
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  // Cloud Run provides PORT in production; fallback to 8080 per Cloud Run specification
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 
   app.use(express.json({ limit: '2mb' }));
 
@@ -23,7 +25,12 @@ async function startServer() {
     next();
   });
 
-  // Health endpoint
+  // Lightweight Cloud Run Health Check endpoint
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
+  // Detailed Health and Diagnostics endpoint
   app.get('/api/health', async (req, res) => {
     let keyStatus = 'missing';
     try {
@@ -130,6 +137,11 @@ async function startServer() {
     }
   });
 
+  // Handle 404 for unmatched API routes
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
+  });
+
   // Vite middleware in dev mode, static files in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -138,16 +150,34 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[MindVault AI] Server running on http://0.0.0.0:${PORT} (PID ${process.pid})`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[MindVault AI] Server listening on 0.0.0.0:${PORT} in ${process.env.NODE_ENV || 'development'} mode (PID ${process.pid})`);
   });
+
+  // Graceful shutdown handling for Cloud Run SIGTERM / SIGINT signals
+  const shutdown = (signal: string) => {
+    console.log(`[MindVault AI] Received ${signal}. Initiating graceful shutdown...`);
+    server.close(() => {
+      console.log('[MindVault AI] HTTP server closed.');
+      process.exit(0);
+    });
+
+    // Enforce shutdown after 10s timeout
+    setTimeout(() => {
+      console.error('[MindVault AI] Forced shutdown after timeout.');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 startServer().catch((err) => {
