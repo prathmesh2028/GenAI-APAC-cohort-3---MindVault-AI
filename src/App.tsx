@@ -164,6 +164,7 @@ const MainApp: React.FC = () => {
                 <DashboardView
                   conversations={conversations}
                   latestReflection={reflections[0] || null}
+                  reflections={reflections}
                   onNavigate={(tab) => {
                     if (tab === 'chat') setActiveConversation(null);
                     setCurrentTab(tab);

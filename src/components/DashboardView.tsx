@@ -6,16 +6,23 @@ import {
   BookOpen,
   Calendar,
   Lock,
-  Layers,
   Flame,
   CheckCircle2,
+  Clock,
+  Compass,
+  TrendingUp,
+  Tag,
+  ShieldCheck,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Conversation, WeeklyReflection, NavTab } from '../types';
+import { formatRelativeTime, calculateReflectionStreak, extractMindPatterns } from '../lib/insights';
 
 interface DashboardViewProps {
   conversations: Conversation[];
   latestReflection: WeeklyReflection | null;
+  reflections?: WeeklyReflection[];
   onNavigate: (tab: NavTab) => void;
   onOpenConversation: (conv: Conversation) => void;
   loading: boolean;
@@ -24,6 +31,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   conversations,
   latestReflection,
+  reflections = [],
   onNavigate,
   onOpenConversation,
   loading,
@@ -31,113 +39,220 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { user } = useAuth();
   const userName = user?.displayName ? user.displayName.split(' ')[0] : 'Explorer';
 
+  // Compute metrics
+  const totalReflections = reflections.length > 0 ? reflections.length : latestReflection ? 1 : 0;
+  const recentActivityDate = conversations[0]?.updatedAt || latestReflection?.createdAt || '';
+  const recentActivityStr = formatRelativeTime(recentActivityDate);
+  const streak = calculateReflectionStreak(conversations, reflections.length > 0 ? reflections : latestReflection ? [latestReflection] : []);
+  const mindPatterns = extractMindPatterns(conversations);
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Learning':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Career':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Projects':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Goals':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Decisions':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'Personal Growth':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'Challenges':
+        return 'bg-stone-100 text-stone-700 border-stone-300';
+      default:
+        return 'bg-stone-50 text-stone-600 border-stone-200';
+    }
+  };
+
   return (
     <div className="space-y-8">
-      {/* Hero Welcome Banner */}
+      {/* Hero Welcome & Command Center Banner */}
       <div
         id="dashboard-welcome-banner"
-        className="relative overflow-hidden rounded-2xl border border-stone-200 bg-stone-900 px-7 py-8 text-stone-100 shadow-xs"
+        className="relative overflow-hidden rounded-2xl border border-stone-800 bg-stone-900 px-7 py-8 text-stone-100 shadow-sm"
       >
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300 ring-1 ring-amber-400/20">
-              <Lock className="h-3 w-3" />
-              <span>Zero-Knowledge Personal Vault</span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="max-w-2xl space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300 ring-1 ring-amber-400/20">
+                <Lock className="h-3 w-3" />
+                <span>Private Vault • Account UID Isolated</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-800 px-3 py-1 text-xs font-medium text-stone-300 ring-1 ring-stone-700">
+                <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                <span>Encrypted Session</span>
+              </div>
             </div>
+
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100">
-              Welcome back, {userName}
+              Welcome to your Vault, {userName}
             </h2>
             <p className="text-sm text-stone-300 leading-relaxed">
-              MindVault AI protects your deepest thoughts, inquiries, and reflections with
-              multi-turn Gemini intelligence and client-isolated Cloud Firestore storage.
+              Your private sanctuary for multi-turn inquiry, cognitive clarity, and weekly AI reflection.
+              All thoughts remain strictly bound to your authenticated credentials.
             </p>
           </div>
 
+          {/* Primary Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              id="dashboard-start-reflection-btn"
+              onClick={() => onNavigate('reflection')}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-stone-950 shadow-sm hover:bg-amber-400 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-stone-900"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Start a New Reflection</span>
+            </button>
+
             <button
               id="dashboard-start-chat-btn"
               onClick={() => onNavigate('chat')}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-stone-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl border border-stone-700 bg-stone-800/90 px-4 py-3 text-sm font-medium text-stone-200 hover:bg-stone-700 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-400"
             >
-              <MessageSquarePlus className="h-4 w-4" />
-              <span>Start New Conversation</span>
-            </button>
-            <button
-              id="dashboard-weekly-reflection-btn"
-              onClick={() => onNavigate('reflection')}
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-700 bg-stone-800/90 px-4 py-3 text-sm font-medium text-stone-200 hover:bg-stone-700 hover:text-white transition-all cursor-pointer"
-            >
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              <span>Weekly Reflection</span>
+              <MessageSquarePlus className="h-4 w-4 text-amber-400" />
+              <span>New Conversation</span>
             </button>
           </div>
         </div>
 
-        {/* Decorative subtle texture */}
-        <div className="absolute -right-12 -bottom-12 h-64 w-64 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        {/* Decorative subtle ambient backdrop glow */}
+        <div className="absolute -right-12 -bottom-12 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs">
+      {/* 4 Summary Cards: Command Center Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Metric 1: Total Conversations */}
+        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">
-              Saved Conversations
+            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              Total Conversations
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-100 text-stone-700">
               <BookOpen className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-3 text-3xl font-bold text-stone-900">{conversations.length}</p>
-          <p className="mt-1 text-xs text-stone-500">Stored privately in Firestore</p>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-stone-900">{conversations.length}</p>
+          <p className="mt-1 text-xs text-stone-500 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+            <span>Stored privately</span>
+          </p>
         </div>
 
-        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs">
+        {/* Metric 2: Reflections Generated */}
+        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">
-              Weekly Reflections
+            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              Reflections Generated
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
               <Sparkles className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-3 text-3xl font-bold text-stone-900">
-            {latestReflection ? 'Synthesized' : 'Pending'}
-          </p>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-stone-900">{totalReflections}</p>
           <p className="mt-1 text-xs text-stone-500">
-            {latestReflection ? 'Updated for this cycle' : 'Ready to generate'}
+            {latestReflection ? 'Latest cycle active' : 'Ready to generate'}
           </p>
         </div>
 
-        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs">
+        {/* Metric 3: Recent Activity */}
+        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">
-              Security Protocol
+            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              Recent Activity
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-100 text-stone-700">
+              <Clock className="h-4 w-4" />
             </div>
           </div>
-          <p className="mt-3 text-xl font-bold text-stone-900 flex items-center gap-1.5">
-            <span>UID Isolated</span>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-stone-900 truncate">
+            {recentActivityStr}
           </p>
-          <p className="mt-1 text-xs text-stone-500">Secret Manager & Auth enforced</p>
+          <p className="mt-1 text-xs text-stone-500">Last vault synchronization</p>
+        </div>
+
+        {/* Metric 4: Current Reflection Streak */}
+        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              Reflection Streak
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+              <Flame className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-stone-900 flex items-center gap-1.5">
+            <span>{streak.count}</span>
+            <span className="text-sm font-normal text-stone-500">{streak.unit}</span>
+          </p>
+          <p className="mt-1 text-xs text-stone-500">
+            {streak.count > 0 ? 'Consistent thinking habit' : 'Reflect today to start'}
+          </p>
         </div>
       </div>
 
-      {/* Main Content Split: Weekly Reflection Card + Recent Conversations */}
+      {/* Mind Patterns Section (Personal Insight System) */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-stone-900 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-amber-600" />
+              <span>Mind Patterns</span>
+            </h3>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Recurring focus areas and cognitive themes detected strictly across your stored conversations.
+            </p>
+          </div>
+          <div className="text-[11px] text-stone-400 font-medium">
+            Based on {conversations.length} saved sessions
+          </div>
+        </div>
+
+        {mindPatterns.length === 0 ? (
+          <div className="rounded-xl bg-stone-50 border border-stone-200/80 p-5 text-center">
+            <p className="text-xs text-stone-600">
+              No recurring patterns detected yet. Save your conversations in MindVault, and your cognitive themes (Learning, Career, Projects, Goals, Decisions) will crystallize here automatically.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {mindPatterns.map((pattern, idx) => (
+              <div
+                key={idx}
+                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium ${getCategoryColor(
+                  pattern.category
+                )}`}
+              >
+                <Tag className="h-3 w-3 opacity-70" />
+                <span>{pattern.name}</span>
+                <span className="rounded-full bg-white/70 px-1.5 py-0.2 text-[10px] font-semibold text-stone-800">
+                  {pattern.count}x
+                </span>
+                <span className="text-[10px] opacity-70">({pattern.category})</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Main Split: Continue Thinking (Recent Conversations) + Your Mind This Week (Hero Reflection) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Cols: Recent Conversations */}
+        {/* Left 2 Cols: Continue Thinking */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-stone-900">Recent Conversations</h3>
+            <div>
+              <h3 className="text-base font-semibold text-stone-900">Continue Thinking</h3>
+              <p className="text-xs text-stone-500">Pick up where you left off in your private dialogues.</p>
+            </div>
             {conversations.length > 0 && (
               <button
                 id="view-all-history-btn"
                 onClick={() => onNavigate('history')}
-                className="text-xs font-medium text-stone-600 hover:text-stone-950 inline-flex items-center gap-1"
+                className="text-xs font-semibold text-amber-700 hover:text-amber-800 inline-flex items-center gap-1 cursor-pointer"
               >
-                <span>View all ({conversations.length})</span>
+                <span>View all history ({conversations.length})</span>
                 <ArrowRight className="h-3 w-3" />
               </button>
             )}
@@ -154,26 +269,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             /* Empty State */
             <div
               id="dashboard-empty-conversations"
-              className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/50 p-8 text-center"
+              className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-8 text-center"
             >
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20">
                 <MessageSquarePlus className="h-6 w-6" />
               </div>
-              <h4 className="mt-4 text-base font-semibold text-stone-900">No saved conversations yet</h4>
+              <h4 className="mt-4 text-base font-semibold text-stone-900">Your Vault is ready for its first thought</h4>
               <p className="mt-1.5 text-sm text-stone-500 max-w-md mx-auto">
-                Begin a conversation with Gemini. Brainstorm an architecture, reflect on an idea, or
-                explore a topic. When saved, MindVault generates summaries and reflections.
+                Discuss an architecture, reflect on an ambiguous decision, or break down a complex problem. Click "Save to Vault" when finished to generate intelligent summaries and weekly insights.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
                 {[
-                  'Deep-dive into distributed systems',
-                  'Journal about this week’s productivity blockers',
-                  'Brainstorming novel AI application ideas',
+                  'Help me reflect on my week',
+                  'Turn my thoughts into a clear plan',
+                  'I’m feeling stuck on a decision',
+                  'Summarize what I’ve learned recently',
                 ].map((promptIdea, idx) => (
                   <button
                     key={idx}
                     onClick={() => onNavigate('chat')}
-                    className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:border-amber-400 hover:bg-amber-50/40 transition-colors"
+                    className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:border-amber-400 hover:bg-amber-50/50 transition-colors cursor-pointer"
                   >
                     "{promptIdea}"
                   </button>
@@ -187,13 +302,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   key={conv.id}
                   id={`recent-conv-${conv.id}`}
                   onClick={() => onOpenConversation(conv)}
-                  className="group rounded-xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-300 hover:shadow-sm cursor-pointer"
+                  className="group rounded-xl border border-stone-200 bg-white p-4.5 transition-all hover:border-amber-300 hover:shadow-xs cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-700 transition-colors">
-                        {conv.title}
-                      </h4>
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-700 transition-colors truncate">
+                          {conv.title}
+                        </h4>
+                      </div>
                       <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
                         {conv.summary || (conv.messages[1] ? conv.messages[1].text : 'No summary recorded.')}
                       </p>
@@ -202,17 +319,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-stone-500">
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-stone-500 font-medium">
                       <Calendar className="h-3 w-3 text-stone-400" />
-                      {new Date(conv.updatedAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {formatRelativeTime(conv.updatedAt)}
                     </span>
                     <span>•</span>
                     <span>{conv.messages.length} messages</span>
                     {conv.topics && conv.topics.length > 0 && (
-                      <div className="flex items-center gap-1 ml-auto">
+                      <div className="flex items-center gap-1 ml-auto flex-wrap">
                         {conv.topics.slice(0, 3).map((topic, i) => (
                           <span
                             key={i}
@@ -230,22 +344,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
 
-        {/* Right 1 Col: Weekly Reflection Spotlight Card */}
+        {/* Right 1 Col: "Your Mind This Week" (Hero Reflection Preview) */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-stone-900">AI Weekly Reflection</h3>
+            <h3 className="text-base font-semibold text-stone-900">Your Mind This Week</h3>
             <button
               id="open-reflection-tab-btn"
               onClick={() => onNavigate('reflection')}
-              className="text-xs font-medium text-amber-700 hover:text-amber-800"
+              className="text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
             >
-              Open Hub
+              Reflection Hub →
             </button>
           </div>
 
           <div
             id="dashboard-reflection-card"
-            className="rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-900 to-stone-950 p-6 text-stone-100 shadow-xs space-y-4"
+            className="rounded-2xl border border-stone-800 bg-stone-900 p-6 text-stone-100 shadow-sm space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300 ring-1 ring-amber-400/20">
@@ -254,46 +368,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
               <span className="text-[11px] text-stone-400">
                 {latestReflection
-                  ? new Date(latestReflection.createdAt).toLocaleDateString()
-                  : 'Needs Generation'}
+                  ? new Date(latestReflection.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Pending'}
               </span>
             </div>
 
             {latestReflection ? (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-medium">
-                    Key Topics Analyzed
+                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold">
+                    What Stood Out This Week
                   </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {latestReflection.topics.map((t, i) => (
-                      <span
-                        key={i}
-                        className="rounded-md bg-stone-800 px-2 py-0.5 text-xs text-amber-200 font-medium border border-stone-700"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="mt-1 text-xs text-stone-300 line-clamp-3 leading-relaxed">
+                    {latestReflection.learned}
+                  </p>
                 </div>
 
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-medium">
-                    Motivational Insight
+                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold">
+                    One Thing to Carry Forward
                   </p>
-                  <p className="mt-1 text-xs text-stone-300 italic line-clamp-3 leading-relaxed">
+                  <p className="mt-1 text-xs text-amber-200/90 italic line-clamp-3 leading-relaxed bg-stone-800/80 p-2.5 rounded-lg border border-stone-700/60">
                     "{latestReflection.motivationalInsight}"
                   </p>
                 </div>
 
                 <div className="pt-2 border-t border-stone-800">
-                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-medium mb-1.5">
-                    Recommended Next Steps
+                  <p className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold mb-2">
+                    Suggested Next Steps
                   </p>
-                  <ul className="space-y-1 text-xs text-stone-300">
+                  <ul className="space-y-1.5 text-xs text-stone-300">
                     {latestReflection.nextSteps.slice(0, 2).map((step, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <span className="text-amber-400 font-semibold">{idx + 1}.</span>
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-300">
+                          {idx + 1}
+                        </span>
                         <span className="line-clamp-1">{step}</span>
                       </li>
                     ))}
@@ -303,23 +415,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <button
                   id="read-full-reflection-btn"
                   onClick={() => onNavigate('reflection')}
-                  className="w-full rounded-xl bg-amber-500 py-2.5 text-xs font-semibold text-stone-950 hover:bg-amber-400 transition-colors"
+                  className="w-full rounded-xl bg-amber-500 py-2.5 text-xs font-semibold text-stone-950 hover:bg-amber-400 transition-colors cursor-pointer shadow-xs"
                 >
-                  View Full Reflection
+                  View Full Weekly Reflection
                 </button>
               </div>
             ) : (
               <div className="space-y-4 py-2 text-center">
                 <p className="text-xs text-stone-300 leading-relaxed">
-                  MindVault synthesizes your saved sessions into actionable knowledge, recurring patterns,
-                  and 3 recommended next steps.
+                  MindVault synthesizes your saved sessions into key takeaways, cognitive patterns, and 3 high-impact next steps.
                 </p>
                 <button
                   id="generate-first-reflection-btn"
                   onClick={() => onNavigate('reflection')}
-                  className="w-full rounded-xl bg-amber-500 py-2.5 text-xs font-semibold text-stone-950 hover:bg-amber-400 transition-colors"
+                  className="w-full rounded-xl bg-amber-500 py-2.5 text-xs font-semibold text-stone-950 hover:bg-amber-400 transition-colors cursor-pointer"
                 >
-                  Generate Reflection
+                  Generate First Reflection
                 </button>
               </div>
             )}

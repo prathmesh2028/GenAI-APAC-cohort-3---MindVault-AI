@@ -112,6 +112,10 @@ export async function getUserReflections(userId: string): Promise<WeeklyReflecti
         nextSteps: data.nextSteps || [],
         motivationalInsight: data.motivationalInsight || '',
         conversationCount: data.conversationCount || 0,
+        wins: data.wins || [],
+        challenges: data.challenges || [],
+        thingsToRevisit: data.thingsToRevisit || [],
+        keyThoughts: data.keyThoughts || '',
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || new Date().toISOString(),
       };
     });

@@ -29,6 +29,10 @@ export interface WeeklyReflection {
   motivationalInsight: string;
   conversationCount: number;
   createdAt: string;
+  wins?: string[];
+  challenges?: string[];
+  thingsToRevisit?: string[];
+  keyThoughts?: string;
 }
 
 export interface UserProfile {
@@ -36,4 +40,10 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+}
+
+export interface MindPattern {
+  name: string;
+  count: number;
+  category: 'Learning' | 'Career' | 'Projects' | 'Goals' | 'Decisions' | 'Personal Growth' | 'Challenges' | 'Other';
 }

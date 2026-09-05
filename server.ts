@@ -75,7 +75,7 @@ async function startServer() {
     } catch (error: any) {
       console.error('[Chat Error]', error?.message || error);
       res.status(500).json({
-        error: 'Gemini is temporarily unavailable. Please try again.',
+        error: "MindVault couldn't reach the AI service right now. Please try again in a moment.",
       });
     }
   });
@@ -105,7 +105,7 @@ async function startServer() {
     } catch (error: any) {
       console.error('[Summarize Error]', error?.message || error);
       res.status(500).json({
-        error: 'Failed to summarize conversation with Gemini. Please try again.',
+        error: "MindVault couldn't summarize your conversation right now. Please try again in a moment.",
       });
     }
   });
@@ -132,7 +132,7 @@ async function startServer() {
     } catch (error: any) {
       console.error('[Reflection Error]', error?.message || error);
       res.status(500).json({
-        error: 'Gemini is temporarily unavailable to generate reflection. Please try again.',
+        error: "MindVault couldn't reach the AI service right now. Please try again in a moment.",
       });
     }
   });

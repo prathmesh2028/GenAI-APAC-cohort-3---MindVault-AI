@@ -40,7 +40,7 @@ export async function generateChatResponse(messages: ChatMessage[]): Promise<str
     contents,
     config: {
       systemInstruction:
-        'You are MindVault AI, an articulate, supportive, and intellectually deep personal knowledge companion and reflection partner. Your purpose is to help the user learn, explore thoughts, brainstorm creative ideas, and journal meaningfully. Always provide clear, thoughtful, and well-structured answers using clean Markdown.',
+        'You are MindVault AI, an articulate, supportive, and intellectually deep personal knowledge companion and reflection partner. Your purpose is to help the user learn, explore thoughts, structure decisions, brainstorm plans, and journal meaningfully. Make your responses easy to scan: use clear headings, concise bullet points or numbered lists where appropriate, bold key concepts, and keep paragraphs brief. Never output verbose fluff.',
       temperature: 0.7,
     },
   });
@@ -123,6 +123,10 @@ export interface WeeklyReflectionOutput {
   patterns: string;
   nextSteps: string[];
   motivationalInsight: string;
+  wins?: string[];
+  challenges?: string[];
+  thingsToRevisit?: string[];
+  keyThoughts?: string;
 }
 
 /**
@@ -140,14 +144,19 @@ export async function generateWeeklyReflection(
     )
     .join('\n\n');
 
-  const prompt = `You are MindVault AI's Personal Growth & Synthesis Engine.
+  const prompt = `You are MindVault AI's Personal Growth & Weekly Synthesis Engine.
 You have been provided with the recent saved conversations of this individual user.
-Synthesize their week across these 5 strict pillars:
-1. Main Topics: High-level themes and subjects explored.
-2. What You Learned: Clear conceptual synthesis of the knowledge, techniques, or insights gained.
-3. Recurring Interests & Patterns: Cognitive habits, curiosities, or recurring challenges noticed across conversations.
-4. Recommended Next Steps: Exactly 3 pragmatic, high-impact action items or learning trajectories to pursue next.
-5. AI Insight: A poignant, empowering, and motivational personal reflection tailored specifically to their demonstrated thoughts.
+Synthesize their week with high discernment and thoughtful care across these areas:
+
+1. Main Topics: High-level themes and subjects explored this week.
+2. What Stood Out This Week (Learned & Explored): Clear conceptual synthesis of the knowledge, techniques, or insights gained.
+3. Patterns Worth Noticing: Cognitive habits, curiosities, or mental friction points noticed across conversations.
+   IMPORTANT: Never present AI interpretations as medical diagnoses or definitive psychological conclusions. Use careful, non-presumptive language such as: "It may suggest...", "You might be noticing...", "One possible pattern is...".
+4. Wins & Breakthroughs: 2 to 3 notable wins, mental clarifications, or productive shifts demonstrated in their logs.
+5. Challenges Explored: 1 to 3 hurdles, uncertainties, or blockers they wrestled with.
+6. Things to Revisit: 2 to 3 unresolved questions, thesis ideas, or topics worth returning to in future reflections.
+7. Suggested Next Steps: Exactly 3 pragmatic, high-impact action items or learning trajectories to pursue next.
+8. One Thing to Carry Forward: A poignant, empowering, and motivational personal takeaway tailored specifically to their demonstrated thoughts.
 
 USER'S SAVED SESSIONS:
 ${contentSummary}`;
@@ -167,11 +176,26 @@ ${contentSummary}`;
           },
           learned: {
             type: Type.STRING,
-            description: 'A rich synthesis of what the user learned and explored.',
+            description: 'What stood out this week: key learnings, thoughts, and breakthroughs.',
           },
           patterns: {
             type: Type.STRING,
-            description: 'Recurring interests, mental models, and thematic patterns observed.',
+            description: 'Patterns worth noticing: observed cognitive curiosities or trends phrased cautiously (e.g. "One possible pattern is...").',
+          },
+          wins: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: '2-3 notable wins, breakthroughs, or key realisations.',
+          },
+          challenges: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: '1-3 challenges or friction points explored.',
+          },
+          thingsToRevisit: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: '2-3 topics, questions, or ideas you may want to revisit.',
           },
           nextSteps: {
             type: Type.ARRAY,
@@ -180,7 +204,7 @@ ${contentSummary}`;
           },
           motivationalInsight: {
             type: Type.STRING,
-            description: 'A short, uplifting, and customized motivational insight.',
+            description: 'One thing to carry forward: a short, uplifting, tailored takeaway.',
           },
         },
         required: ['topics', 'learned', 'patterns', 'nextSteps', 'motivationalInsight'],
